@@ -1,0 +1,1 @@
+<img src="/assets/img/icono.png" alt="" style="width:50px; height:auto">
