@@ -44,3 +44,6 @@ Route::get('/api/ordenes-pendientes', [PedidoController::class, 'apiPendientes']
 Route::post('/pedidos/{id}/deliver', [PedidoController::class, 'deliver']);
 Route::get('/dashboard/exportar-excel', [salesController::class, 'exportarExcel'])
     ->name('dashboard.exportar');
+
+
+ 

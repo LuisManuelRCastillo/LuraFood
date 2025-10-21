@@ -4,6 +4,10 @@ namespace App\Http\Controllers;
 use App\Models\Pedido as Pedido;
 use App\Models\ProductsModel as Product;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\PedidoConfirmacion;
 
 class PedidoController extends Controller
 {
@@ -149,16 +153,17 @@ class PedidoController extends Controller
         return view('Orders.resumeOrder', compact('pedido', 'cliente'));
     }
 
-    // Guardar definitivamente
-    public function finalizar(Request $request)
-    {
-        $pedidoSesion = session('pedido', []);
-        $cliente      = session('cliente', []);
+public function finalizar(Request $request)
+{
+    $pedidoSesion = session('pedido', []);
+    $cliente      = session('cliente', []);
 
-        if (! $pedidoSesion || ! $cliente) {
-            return redirect('/');
-        }
+    if (!$pedidoSesion || !$cliente) {
+        return redirect('/')->with('error', 'No hay pedido para procesar');
+    }
 
+    try {
+        // Crear el pedido en la base de datos
         $pedido = Pedido::create([
             'customer_name'  => $cliente['nombre'],
             'customer_email' => $cliente['email'],
@@ -166,21 +171,62 @@ class PedidoController extends Controller
             'total'          => array_sum(array_column($pedidoSesion, 'subtotal')),
         ]);
 
+        Log::info('Pedido creado con ID: ' . $pedido->id);
+
         foreach ($pedidoSesion as $item) {
-    $pedido->items()->create([
-        'product_id' => $item['product_id'],
-        'quantity'   => $item['quantity'],
-        'subtotal'   => $item['subtotal'],
-        'tamano'     => $item['tamano'] ?? null,
-        'leche'      => $item['leche'] ?? null,
-        'extras'     => isset($item['extras']) && !empty($item['extras']) ? json_encode($item['extras']) : null,
-    ]);
-}
+            $pedido->items()->create([
+                'product_id' => $item['product_id'],
+                'quantity'   => $item['quantity'],
+                'subtotal'   => $item['subtotal'],
+                'tamano'     => $item['tamano'] ?? null,
+                'leche'      => $item['leche'] ?? null,
+                'extras'     => isset($item['extras']) && !empty($item['extras']) ? json_encode($item['extras']) : null,
+            ]);
+        }
+
+        Log::info('Items del pedido guardados correctamente');
+
+        // Generar PDF y enviar correo
+        try {
+            Log::info('Iniciando generación de PDF...');
+            
+            $pdf = Pdf::loadView('Orders.orderPdf', [
+                'cliente' => $cliente,
+                'pedido' => $pedidoSesion,
+                'numeroPedido' => $pedido->id
+            ]);
+
+            Log::info('PDF generado correctamente');
+
+            // Enviar correo con PDF adjunto
+            Log::info('Intentando enviar correo a: ' . $cliente['email']);
+            
+            Mail::to($cliente['email'])->send(
+                new PedidoConfirmacion($cliente, $pedidoSesion, $pdf, $pedido->id)
+            );
+
+            Log::info('Correo enviado correctamente');
+
+            $mensaje = '¡Pedido finalizado! Te hemos enviado un correo con los detalles.';
+            
+        } catch (\Exception $e) {
+            Log::error('Error al enviar correo: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
+            $mensaje = 'Pedido finalizado. Error al enviar correo: ' . $e->getMessage();
+        }
+
         // Limpiar sesión
         session()->forget(['pedido', 'cliente']);
 
-        return redirect('/');
+        return redirect('/')->with('success', $mensaje);
+
+    } catch (\Exception $e) {
+        Log::error('Error general al finalizar pedido: ' . $e->getMessage());
+        Log::error('Trace: ' . $e->getTraceAsString());
+        
+        return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
     }
+}
     public function pendientes()
     {
         return view('Orders.pendingOrder');
