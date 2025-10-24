@@ -13,7 +13,7 @@ class QrController extends Controller
     public function index(Request $request)
     {
         $mesa = $request->input('mesa', 'default');
-        $url = url("/menu?mesa={$mesa}");
+        $url = url("/?mesa={$mesa}");
 
         // Crear el código QR
         $builder = new Builder(

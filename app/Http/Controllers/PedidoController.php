@@ -238,6 +238,13 @@ public function finalizar(Request $request)
         ->where('status', 'pending')
         ->latest()
         ->get();
+         $mesa = session('mesa');
+
+   
+    $pedidos->transform(function($pedido) use ($mesa) {
+        $pedido->mesa = $mesa; 
+        return $pedido;
+    });
         
     return response()->json($pedidos);
     }
