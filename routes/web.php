@@ -5,9 +5,14 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\salesController;
+use App\Http\Controllers\QrController;
 
 
-Route::get('/', function () {
+Route::get('/', function (Illuminate\Http\Request $request) {
+
+    if($request->has('mesa')) {
+        session(['mesa' => $request->mesa]);
+    }
     return view('welcome');
 });
 
@@ -46,4 +51,5 @@ Route::get('/dashboard/exportar-excel', [salesController::class, 'exportarExcel'
     ->name('dashboard.exportar');
 
 
+Route::get('/qr',[QrController::class, 'index'])->name('qr');
  

@@ -31,7 +31,7 @@ async function cargarPedidos() {
     cont.innerHTML = pedidos.map(p => `
     <div class="space-y-2">
         <div class="border p-4 rounded-lg shadow bg-white">
-            <h2 class="font-bold text-lg text-green-600">Pedido #${p.id}</h2>
+            <h2 class="font-bold text-lg text-green-600">Pedido #${p.id} - Mesa: ${p.mesa}</h2>
             <p><strong>Cliente:</strong> ${p.customer_name ?? 'N/A'}</p>
             <p><strong>Total:</strong> $${p.total}</p>
             <ul class="mt-2 text-sm list-disc list-inside">
