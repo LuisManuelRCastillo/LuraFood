@@ -16,7 +16,7 @@
 
 <script>
 async function cargarPedidos() {
-    const res = await fetch("{{ route('api.ordenes.pendientes') }}");
+    const res = await fetch("/api/ordenes-pendientes");
     const pedidos = await res.json();
 
     const cont = document.getElementById("lista-pedidos");
