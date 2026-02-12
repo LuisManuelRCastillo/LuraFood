@@ -23,7 +23,7 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 async function cargarPedidos() {
     try {
         // Ruta relativa para API, funciona en HTTP y HTTPS
-        const res = await fetch("/lurafood/api/ordenes-pendientes");
+        const res = await fetch("{{ route('api.ordenes.pendientes') }}");
         if (!res.ok) throw new Error("Error al cargar pedidos");
         const pedidos = await res.json();
 
