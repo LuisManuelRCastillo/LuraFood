@@ -12,7 +12,7 @@ class Pedido extends Model
     // public $timestamps = false;
      const UPDATED_AT = null;
 
-    protected $fillable = ['customer_name', 'customer_email', 'mesa', 'status', 'total'];
+    protected $fillable = ['customer_name', 'customer_email', 'mesa', 'status', 'total', 'payment_status', 'payment_method'];
 
     public function items()
     {

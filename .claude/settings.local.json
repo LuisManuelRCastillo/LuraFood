@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan migrate:status:*)",
+      "Bash(php artisan tinker --execute=\"echo implode\\('', '', Schema::getColumnListing\\(''pedidos''\\)\\);\")",
+      "Bash(php artisan:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(php -i:*)",
+      "Bash(php:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}

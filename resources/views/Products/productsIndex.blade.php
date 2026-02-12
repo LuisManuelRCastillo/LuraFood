@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Productos - Menú Coffee</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('faviconn.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="bg-gray-50">
@@ -205,6 +206,31 @@
                         }).then(() => actualizarCarrito());
                     });
                 });
+
+                // Interceptar formulario de confirmar pedido
+                const formConfirmar = document.querySelector(".form-confirmar-pedido");
+                if (formConfirmar) {
+                    formConfirmar.addEventListener("submit", e => {
+                        e.preventDefault();
+                        const btn = formConfirmar.querySelector("button[type='submit']");
+                        btn.disabled = true;
+                        btn.innerText = "Procesando...";
+
+                        fetch(formConfirmar.action, {
+                            method: "POST",
+                            body: new FormData(formConfirmar),
+                            headers: { "X-Requested-With": "XMLHttpRequest" },
+                            redirect: "follow"
+                        }).then(res => {
+                            // Redirigir a la página de confirmación
+                            window.location.href = "/ordenes-confirmadas";
+                        }).catch(() => {
+                            btn.disabled = false;
+                            btn.innerText = "Confirmar Pedido";
+                            alert("Error al confirmar el pedido");
+                        });
+                    });
+                }
             }
 
             bindEventos();

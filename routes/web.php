@@ -23,7 +23,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 Route::get('/categorias', [CategoryController::class, 'index'])->name('categorias.index');
 Route::get('/productos/{id}', [ProductsController::class, 'index'])->name('productos.index');
-Route::get('/carrito', [PedidoController::class, 'carrito'])->name('pedidos.carrito');
+Route::get('/carrito', [PedidoController::class, 'cart'])->name('pedidos.carrito');
+Route::post('/confirmar-pedido', [PedidoController::class, 'confirmarRapido'])->name('pedidos.confirmar-rapido');
 Route::post('/agregar/{productId}', [PedidoController::class, 'agregar'])->name('pedidos.agregar');
 Route::get('/eliminar/{productId}', [PedidoController::class, 'eliminar'])->name('pedidos.eliminar');
 
@@ -44,9 +45,19 @@ Route::get('/carrito/contenido', function (Illuminate\Http\Request $request) {
     return view('components.cart');
 })->name('carrito.contenido');
 
+Route::get('/ordenes-confirmadas', function() { return view('Orders.orderConfirmed'); })->name('ordenes.confirmadas');
+
+// Rutas de staff (panel de órdenes - sin layout auth)
 Route::get('/ordenes-pendientes', [PedidoController::class, 'pendientes'])->name('pedidos.pendientes');
-Route::get('/api/ordenes-pendientes', [PedidoController::class, 'apiPendientes'])->name('api.ordenes.pendientes');
+Route::post('/pedidos/{id}/marcar-pagado', [PedidoController::class, 'marcarPagado'])->name('pedidos.marcar-pagado');
 Route::post('/pedidos/{id}/deliver', [PedidoController::class, 'deliver']);
+
+// Rutas de admin (requieren login - usan layout auth)
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+    Route::get('/pagos-pendientes', [PedidoController::class, 'pagosPendientes'])->name('pagos.pendientes');
+});
+Route::get('/api/ordenes-pendientes', [PedidoController::class, 'apiPendientes'])->name('api.ordenes.pendientes');
+Route::get('/api/pagos-pendientes', [PedidoController::class, 'apiPagosPendientes'])->name('api.pagos.pendientes');
 Route::get('/dashboard/exportar-excel', [salesController::class, 'exportarExcel'])
     ->name('dashboard.exportar');
 
