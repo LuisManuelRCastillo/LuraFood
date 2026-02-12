@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Órdenes pendientes</title>
     @vite(['resources/css/app.css'])
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
     
@@ -13,82 +14,87 @@
     <h1 class="text-2xl font-bold mb-6 text-green-700">Órdenes pendientes</h1>
     <div id="lista-pedidos" class="space-y-4"></div>
 </div>
-
 <script>
+    const mesaActual = "{{ session('mesa', 'N/A') }}";
+</script>
+<script>
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
 async function cargarPedidos() {
-    const res = await fetch("/api/ordenes-pendientes");
-    const pedidos = await res.json();
+    try {
+        // Ruta relativa para API, funciona en HTTP y HTTPS
+        const res = await fetch("/lurafood/api/ordenes-pendientes");
+        if (!res.ok) throw new Error("Error al cargar pedidos");
+        const pedidos = await res.json();
 
-    const cont = document.getElementById("lista-pedidos");
-     if (pedidos.length === 0) {
-        cont.innerHTML = `
-            <div class="text-center py-10">
-                <p class="text-gray-500 text-lg">No hay pedidos pendientes ☕</p>
-            </div>`;
-        return;
-    }
+        const cont = document.getElementById("lista-pedidos");
+        if (pedidos.length === 0) {
+            cont.innerHTML = `
+                <div class="text-center py-10">
+                    <p class="text-gray-500 text-lg">No hay pedidos pendientes ☕</p>
+                </div>`;
+            return;
+        }
 
-    cont.innerHTML = pedidos.map(p => `
-    <div class="space-y-2">
-        <div class="border p-4 rounded-lg shadow bg-white">
-            <h2 class="font-bold text-lg text-green-600">
-                Pedido #${p.id} - Mesa: ${p.mesa ?? '{{ session('mesa', 'N/A') }}'}
-            </h2> 
-            <p><strong>Cliente:</strong> ${p.customer_name ?? 'N/A'}</p>
-            <p><strong>Total:</strong> $${p.total}</p>
-            <ul class="mt-2 text-sm list-disc list-inside">
-                 ${p.items.map(i => `
+        cont.innerHTML = pedidos.map(p => `
+        <div class="space-y-2">
+            <div class="border p-4 rounded-lg shadow bg-white">
+                <h2 class="font-bold text-lg text-green-600">
+                   Pedido #${p.id} - Mesa: ${p.mesa || mesaActual}
+                </h2> 
+                <p><strong>Cliente:</strong> ${p.customer_name ?? 'N/A'}</p>
+                <p><strong>Total:</strong> $${p.total}</p>
+                <ul class="mt-2 text-sm list-disc list-inside">
+                    ${p.items.map(i => `
                         <li class="border-l-4 border-green-500 pl-3 py-2 bg-gray-50">
                             <p class="font-semibold text-gray-800">
                                 ${i.quantity}x ${i.producto?.nombre ?? 'Producto'}
                             </p>
-                            
-                            ${i.tamano ? `
-                                <p class="text-sm text-gray-600 mt-1">
-                                    <strong>Tamaño:</strong> ${i.tamano.charAt(0).toUpperCase() + i.tamano.slice(1)}
-                                </p>
-                            ` : ''}
-                            
-                            ${i.leche ? `
-                                <p class="text-sm text-gray-600">
-                                    <strong>Leche:</strong> ${i.leche.charAt(0).toUpperCase() + i.leche.slice(1)}
-                                </p>
-                            ` : ''}
-                            
-                            ${i.extras && i.extras.length > 0 ? `
-    <p class="text-sm text-gray-600">
-        <strong>Extras:</strong> ${(typeof i.extras === 'string' ? JSON.parse(i.extras) : i.extras).map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(', ')}
-    </p>
-` : ''}
+                            ${i.tamano ? `<p class="text-sm text-gray-600 mt-1"><strong>Tamaño:</strong> ${i.tamano.charAt(0).toUpperCase() + i.tamano.slice(1)}</p>` : ''}
+                            ${i.leche ? `<p class="text-sm text-gray-600"><strong>Leche:</strong> ${i.leche.charAt(0).toUpperCase() + i.leche.slice(1)}</p>` : ''}
+                            ${i.extras && i.extras.length > 0 ? `<p class="text-sm text-gray-600"><strong>Extras:</strong> ${(typeof i.extras === 'string' ? JSON.parse(i.extras) : i.extras).map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(', ')}</p>` : ''}
                         </li>
                     `).join("")}
-            </ul>
-        </div>
-         <button onclick="marcarEntregado(${p.id})"
-                class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-                Marcar como entregado
+                </ul>
+            </div>
+            <button onclick="marcarEntregado(${p.id})"
+                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    Marcar como entregado
             </button>
-    </div>
-    `).join("");
-}
-async function marcarEntregado(pedidoId) {
-    const res = await fetch(`/pedidos/${pedidoId}/deliver`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-TOKEN": "{{ csrf_token() }}"
-        }
-    });
+        </div>
+        `).join("");
 
-    if (res.ok) {
-        cargarPedidos(); 
-    } else {
+    } catch (error) {
+        console.error("Error cargando pedidos:", error);
+    }
+}
+
+async function marcarEntregado(pedidoId) {
+    try {
+       const res= await fetch(`/lurafood/pedidos/${pedidoId}/deliver`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+    }
+});
+       if(res.ok){
+        cargarPedidos();
+       }else{
+        const errorText = await res.text();
+        console.error("Error al marcar entregado:", errorText);
+        alert("No se pudo actualizar el estado");
+       }
+    } catch (error) {
+        console.error("Error en marcarEntregado:", error);
         alert("No se pudo actualizar el estado");
     }
 }
-// refresca cada 5 segundos
+
+// Refresca cada 5 segundos
 setInterval(cargarPedidos, 5000);
 cargarPedidos();
 </script>
+
 </body>
 </html>

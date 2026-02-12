@@ -51,6 +51,8 @@ class PedidoController extends Controller
 
         $pedido = session('pedido', []);
 
+        $mesa = session('mesa', null);
+
         if (isset($pedido[$key])) {
             $pedido[$key]['quantity']++;
             $pedido[$key]['subtotal'] = $pedido[$key]['quantity'] * $pedido[$key]['precio'];
@@ -64,6 +66,8 @@ class PedidoController extends Controller
                 'subtotal'   => $precioBase,
                 'leche'      => $leche,
                 'extras'     => $extras,
+                'mesa'		 => $mesa,
+       
             ];
         }
 
@@ -157,6 +161,7 @@ public function finalizar(Request $request)
 {
     $pedidoSesion = session('pedido', []);
     $cliente      = session('cliente', []);
+    $mesa = session('mesa');
 
     if (!$pedidoSesion || !$cliente) {
         return redirect('/')->with('error', 'No hay pedido para procesar');
@@ -169,6 +174,7 @@ public function finalizar(Request $request)
             'customer_email' => $cliente['email'],
             'status'         => 'pending',
             'total'          => array_sum(array_column($pedidoSesion, 'subtotal')),
+            'mesa'			 => $mesa,
         ]);
 
         Log::info('Pedido creado con ID: ' . $pedido->id);
@@ -216,7 +222,7 @@ public function finalizar(Request $request)
         }
 
         // Limpiar sesión
-        session()->forget(['pedido', 'cliente']);
+        session()->forget(['pedido', 'cliente','mesa']);
 
         return redirect('/')->with('success', $mensaje);
 
@@ -238,13 +244,6 @@ public function finalizar(Request $request)
         ->where('status', 'pending')
         ->latest()
         ->get();
-         $mesa = session('mesa');
-
-   
-    $pedidos->transform(function($pedido) use ($mesa) {
-        $pedido->mesa = $mesa; 
-        return $pedido;
-    });
         
     return response()->json($pedidos);
     }
