@@ -140,8 +140,8 @@ class PedidoController extends Controller
     public function guardarCliente(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:255',
-            'email'  => 'required|email|max:255',
+            'nombre' => 'nullable|string|max:255',
+            'email'  => 'nullable|email|max:255',
         ]);
 
         session(['cliente' => $request->only('nombre', 'email')]);
@@ -160,6 +160,11 @@ class PedidoController extends Controller
     // Nuevo: Confirmación rápida sin registro obligatorio
     public function confirmarRapido(Request $request)
     {
+        $request->validate([
+            'nombre' => 'nullable|string|max:255',
+            'email'  => 'nullable|email|max:255',
+        ]);
+
         $pedidoSesion = session('pedido', []);
         $mesa = session('mesa');
 
@@ -196,25 +201,6 @@ class PedidoController extends Controller
                 ]);
             }
 
-            // Enviar correo si hay email
-            if ($email) {
-                try {
-                    $pdf = Pdf::loadView('Orders.orderPdf', [
-                        'cliente' => ['nombre' => $nombre, 'email' => $email],
-                        'pedido' => $pedidoSesion,
-                        'numeroPedido' => $pedido->id
-                    ]);
-
-                    Mail::to($email)->send(
-                        new PedidoConfirmacion(['nombre' => $nombre, 'email' => $email], $pedidoSesion, $pdf, $pedido->id)
-                    );
-                    
-                    Log::info("Correo de confirmación enviado a $email");
-                } catch (\Exception $e) {
-                    Log::warning("No se pudo enviar correo a $email: " . $e->getMessage());
-                }
-            }
-
             // Limpiar sesión
             session()->forget(['pedido', 'cliente', 'mesa']);
 
@@ -234,15 +220,15 @@ public function finalizar(Request $request)
     $cliente      = session('cliente', []);
     $mesa = session('mesa');
 
-    if (!$pedidoSesion || !$cliente) {
+    if (!$pedidoSesion) {
         return redirect('/')->with('error', 'No hay pedido para procesar');
     }
 
     try {
         // Crear el pedido en la base de datos
         $pedido = Pedido::create([
-            'customer_name'  => $cliente['nombre'],
-            'customer_email' => $cliente['email'],
+            'customer_name'  => $cliente['nombre'] ?? 'Cliente Anónimo',
+            'customer_email' => $cliente['email'] ?? null,
             'status'         => 'pending',
             'total'          => array_sum(array_column($pedidoSesion, 'subtotal')),
             'mesa'			 => $mesa,
@@ -263,39 +249,12 @@ public function finalizar(Request $request)
 
         Log::info('Items del pedido guardados correctamente');
 
-        // Generar PDF y enviar correo
-        try {
-            Log::info('Iniciando generación de PDF...');
-            
-            $pdf = Pdf::loadView('Orders.orderPdf', [
-                'cliente' => $cliente,
-                'pedido' => $pedidoSesion,
-                'numeroPedido' => $pedido->id
-            ]);
-
-            Log::info('PDF generado correctamente');
-
-            // Enviar correo con PDF adjunto
-            Log::info('Intentando enviar correo a: ' . $cliente['email']);
-            
-            Mail::to($cliente['email'])->send(
-                new PedidoConfirmacion($cliente, $pedidoSesion, $pdf, $pedido->id)
-            );
-
-            Log::info('Correo enviado correctamente');
-
-            $mensaje = '¡Pedido finalizado! Te hemos enviado un correo con los detalles.';
-            
-        } catch (\Exception $e) {
-            Log::error('Error al enviar correo: ' . $e->getMessage());
-            Log::error('Trace: ' . $e->getTraceAsString());
-            $mensaje = 'Pedido finalizado. Error al enviar correo: ' . $e->getMessage();
-        }
-
         // Limpiar sesión
         session()->forget(['pedido', 'cliente','mesa']);
 
-        return redirect('/')->with('success', $mensaje);
+        return redirect('/ordenes-confirmadas')
+            ->with('success', "Pedido #$pedido->id confirmado. Sera preparado en poco tiempo.")
+            ->with('pedido_id', $pedido->id);
 
     } catch (\Exception $e) {
         Log::error('Error general al finalizar pedido: ' . $e->getMessage());
@@ -356,10 +315,47 @@ public function finalizar(Request $request)
     // Marcar un pedido como pagado
     public function marcarPagado(Request $request, $id)
     {
-        $pedido = Pedido::findOrFail($id);
+        $pedido = Pedido::with('items.producto')->findOrFail($id);
         $pedido->payment_status = 'paid';
         $pedido->payment_method = $request->input('payment_method', 'cash');
         $pedido->save();
+
+        // Enviar comprobante por correo al marcar como pagado
+        if ($pedido->customer_email) {
+            try {
+                $cliente = [
+                    'nombre' => $pedido->customer_name,
+                    'email'  => $pedido->customer_email,
+                ];
+
+                $pedidoItems = [];
+                foreach ($pedido->items as $item) {
+                    $pedidoItems[] = [
+                        'nombre'   => $item->producto->nombre ?? 'Producto',
+                        'quantity' => $item->quantity,
+                        'precio'   => $item->subtotal / $item->quantity,
+                        'subtotal' => $item->subtotal,
+                        'tamano'   => $item->tamano,
+                        'leche'    => $item->leche,
+                        'extras'   => $item->extras ? (is_string($item->extras) ? json_decode($item->extras, true) : $item->extras) : [],
+                    ];
+                }
+
+                $pdf = Pdf::loadView('Orders.orderPdf', [
+                    'cliente'      => $cliente,
+                    'pedido'       => $pedidoItems,
+                    'numeroPedido' => $pedido->id,
+                ]);
+
+                Mail::to($pedido->customer_email)->send(
+                    new PedidoConfirmacion($cliente, $pedidoItems, $pdf, $pedido->id)
+                );
+
+                Log::info("Comprobante de pago enviado a {$pedido->customer_email} para pedido #{$pedido->id}");
+            } catch (\Exception $e) {
+                Log::warning("No se pudo enviar comprobante a {$pedido->customer_email}: " . $e->getMessage());
+            }
+        }
 
         if ($request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Pago registrado']);

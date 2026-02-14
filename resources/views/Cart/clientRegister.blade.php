@@ -15,12 +15,12 @@
     @csrf
     <div class="mb-4">
         <label class="block mb-1 font-semibold">Nombre</label>
-        <input type="text" name="nombre" class="w-full border px-3 py-2 rounded" required>
+        <input type="text" name="nombre" class="w-full border px-3 py-2 rounded" placeholder="Ej: Juan">
     </div>
 
     <div class="mb-4">
-        <label class="block mb-1 font-semibold">Correo electrónico</label>
-        <input type="email" name="email" class="w-full border px-3 py-2 rounded" required>
+        <label class="block mb-1 font-semibold">Correo electrónico <span class="text-gray-500 font-normal">(opcional)</span></label>
+        <input type="email" name="email" class="w-full border px-3 py-2 rounded" placeholder="Ej: juan@email.com">
     </div>
 
     <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Continuar</button>
