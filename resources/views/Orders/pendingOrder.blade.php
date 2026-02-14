@@ -11,32 +11,32 @@
 </head>
 <body class="bg-gray-50">
 
-<div class="max-w-4xl mx-auto p-6">
+<div class="max-w-4xl mx-auto p-4 sm:p-6">
     {{-- Tabs de navegación --}}
     <div class="flex border-b border-gray-300 mb-6">
         <button id="tabPendientes" onclick="cambiarTab('pendientes')"
-                class="px-6 py-3 font-bold text-green-700 border-b-2 border-green-600 transition">
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 font-bold text-green-700 border-b-2 border-green-600 transition text-sm sm:text-base">
             En Preparación
         </button>
         <button id="tabPagos" onclick="cambiarTab('pagos')"
-                class="px-6 py-3 font-bold text-gray-500 border-b-2 border-transparent hover:text-gray-700 transition">
+                class="flex-1 sm:flex-none px-4 sm:px-6 py-3 font-bold text-gray-500 border-b-2 border-transparent hover:text-gray-700 transition text-sm sm:text-base">
             Pagos Pendientes (<span id="pagosCount">0</span>)
         </button>
     </div>
 
     {{-- Sección: Órdenes en preparación --}}
     <div id="seccionPendientes">
-        <h1 class="text-2xl font-bold mb-6 text-green-700">Órdenes pendientes</h1>
+        <h1 class="text-xl sm:text-2xl font-bold mb-6 text-green-700">Órdenes pendientes</h1>
         <div id="lista-pedidos" class="space-y-4"></div>
     </div>
 
     {{-- Sección: Pagos pendientes --}}
     <div id="seccionPagos" class="hidden">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-green-700">Pagos Pendientes</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-green-700">Pagos Pendientes</h1>
             <div class="text-right">
-                <p class="text-gray-600 text-sm">Total pendiente</p>
-                <p id="totalPendiente" class="text-3xl font-bold text-red-600">$0</p>
+                <p class="text-gray-600 text-xs sm:text-sm">Total pendiente</p>
+                <p id="totalPendiente" class="text-2xl sm:text-3xl font-bold text-red-600">$0</p>
             </div>
         </div>
         <div id="lista-pagos" class="space-y-4"></div>
@@ -109,7 +109,7 @@
                     </ul>
                 </div>
                 <button onclick="marcarEntregado(${p.id})"
-                        class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                        class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition font-bold text-base">
                         Marcar como entregado
                 </button>
             </div>
@@ -165,20 +165,20 @@
             }
 
             cont.innerHTML = pedidos.map(p => `
-            <div class="bg-white border-l-4 border-red-500 shadow rounded-lg p-5">
+            <div class="bg-white border-l-4 border-red-500 shadow rounded-lg p-4 sm:p-5">
                 <div class="flex justify-between items-start mb-3">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">Pedido #${p.id}</h2>
-                        <p class="text-sm text-gray-600">Cliente: <strong>${p.customer_name ?? 'Anónimo'}</strong></p>
+                    <div class="min-w-0 flex-1 pr-3">
+                        <h2 class="text-base sm:text-lg font-bold text-gray-800">Pedido #${p.id}</h2>
+                        <p class="text-sm text-gray-600 truncate">Cliente: <strong>${p.customer_name ?? 'Anónimo'}</strong></p>
                         ${p.mesa ? `<p class="text-sm text-gray-600">Mesa: ${p.mesa}</p>` : ''}
                     </div>
-                    <div class="text-right">
-                        <p class="text-2xl font-bold text-red-600">$${parseFloat(p.total).toFixed(2)}</p>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-xl sm:text-2xl font-bold text-red-600">$${parseFloat(p.total).toFixed(2)}</p>
                         <p class="text-xs text-gray-500">PENDIENTE</p>
                     </div>
                 </div>
 
-                <div class="bg-gray-50 rounded p-3 mb-3">
+                <div class="bg-gray-50 rounded p-3 mb-4">
                     <p class="font-semibold text-gray-700 text-sm mb-1">Productos:</p>
                     <ul class="text-sm text-gray-600 space-y-1">
                         ${p.items.map(i => `
@@ -190,18 +190,22 @@
                     </ul>
                 </div>
 
-                <div class="flex gap-2 flex-wrap">
+                <p class="font-semibold text-gray-700 text-xs mb-2">Registrar pago:</p>
+                <div class="grid grid-cols-3 gap-2">
                     <button onclick="marcarPagado(${p.id}, 'cash')"
-                            class="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-bold transition">
-                        Efectivo
+                            class="px-2 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 text-sm font-bold transition flex flex-col items-center gap-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        <span>Efectivo</span>
                     </button>
                     <button onclick="marcarPagado(${p.id}, 'card')"
-                            class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-bold transition">
-                        Tarjeta
+                            class="px-2 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-bold transition flex flex-col items-center gap-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                        <span>Tarjeta</span>
                     </button>
                     <button onclick="marcarPagado(${p.id}, 'transfer')"
-                            class="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-bold transition">
-                        Transferencia
+                            class="px-2 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 text-sm font-bold transition flex flex-col items-center gap-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        <span>Transfer.</span>
                     </button>
                 </div>
             </div>
