@@ -168,12 +168,13 @@
         });
 
         document.addEventListener("DOMContentLoaded", () => {
+            const contenedor = document.getElementById("contenidoCarrito");
+
             function actualizarCarrito() {
                 fetch("{{ route('carrito.contenido') }}")
                     .then(res => res.text())
                     .then(html => {
-                        document.getElementById("contenidoCarrito").innerHTML = html;
-                        bindEventos();
+                        contenedor.innerHTML = html;
                     });
 
                 fetch("{{ route('carrito.contenido') }}?count=1")
@@ -185,55 +186,51 @@
                     });
             }
 
-            function bindEventos() {
-                document.querySelectorAll(".form-mas, .form-menos").forEach(form => {
-                    form.addEventListener("submit", e => {
-                        e.preventDefault();
-                        fetch(form.action, {
-                            method: "POST",
-                            body: new FormData(form),
-                            headers: { "X-Requested-With": "XMLHttpRequest" }
-                        }).then(() => actualizarCarrito());
-                    });
-                });
+            // Delegación de eventos en el contenedor (no se pierden al reemplazar innerHTML)
+            contenedor.addEventListener("submit", e => {
+                const form = e.target.closest(".form-mas, .form-menos");
+                if (form) {
+                    e.preventDefault();
+                    fetch(form.action, {
+                        method: "POST",
+                        body: new FormData(form),
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    }).then(() => actualizarCarrito());
+                    return;
+                }
 
-                document.querySelectorAll(".btn-eliminar").forEach(btn => {
-                    btn.addEventListener("click", e => {
-                        e.preventDefault();
-                        fetch(btn.href, {
-                            method: "GET",
-                            headers: { "X-Requested-With": "XMLHttpRequest" }
-                        }).then(() => actualizarCarrito());
-                    });
-                });
-
-                // Interceptar formulario de confirmar pedido
-                const formConfirmar = document.querySelector(".form-confirmar-pedido");
+                const formConfirmar = e.target.closest(".form-confirmar-pedido");
                 if (formConfirmar) {
-                    formConfirmar.addEventListener("submit", e => {
-                        e.preventDefault();
-                        const btn = formConfirmar.querySelector("button[type='submit']");
-                        btn.disabled = true;
-                        btn.innerText = "Procesando...";
+                    e.preventDefault();
+                    const btn = formConfirmar.querySelector("button[type='submit']");
+                    btn.disabled = true;
+                    btn.innerText = "Procesando...";
 
-                        fetch(formConfirmar.action, {
-                            method: "POST",
-                            body: new FormData(formConfirmar),
-                            headers: { "X-Requested-With": "XMLHttpRequest" },
-                            redirect: "follow"
-                        }).then(res => {
-                            // Redirigir a la página de confirmación
-                            window.location.href = "/ordenes-confirmadas";
-                        }).catch(() => {
-                            btn.disabled = false;
-                            btn.innerText = "Confirmar Pedido";
-                            alert("Error al confirmar el pedido");
-                        });
+                    fetch(formConfirmar.action, {
+                        method: "POST",
+                        body: new FormData(formConfirmar),
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                        redirect: "follow"
+                    }).then(res => {
+                        window.location.href = "/ordenes-confirmadas";
+                    }).catch(() => {
+                        btn.disabled = false;
+                        btn.innerText = "Confirmar Pedido";
+                        alert("Error al confirmar el pedido");
                     });
                 }
-            }
+            });
 
-            bindEventos();
+            contenedor.addEventListener("click", e => {
+                const btn = e.target.closest(".btn-eliminar");
+                if (btn) {
+                    e.preventDefault();
+                    fetch(btn.href, {
+                        method: "GET",
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    }).then(() => actualizarCarrito());
+                }
+            });
         });
     </script>
 </body>

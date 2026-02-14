@@ -16,20 +16,20 @@
                         <p class="text-sm text-gray-500">Extras: {{ implode(', ', $item['extras']) }}</p>
                     @endif
                 </div>
-                <div class="flex items-center space-x-2">
+                <div class="flex items-center space-x-1">
                     <form action="{{ route('pedido.menos', $key) }}" method="POST" class="form-menos">
                         @csrf
-                        <button class="px-2 bg-gray-200 rounded">-</button>
+                        <button type="submit" class="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full text-lg font-bold active:bg-gray-300 select-none">-</button>
                     </form>
-                    <span class="font-bold">{{ $item['quantity'] }}</span>
+                    <span class="font-bold w-6 text-center">{{ $item['quantity'] }}</span>
                     <form action="{{ route('pedido.mas', $key) }}" method="POST" class="form-mas">
                         @csrf
-                        <button class="px-2 bg-gray-200 rounded">+</button>
+                        <button type="submit" class="w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full text-lg font-bold active:bg-gray-300 select-none">+</button>
                     </form>
                 </div>
                 <div class="flex items-center space-x-2">
                     <span class="font-bold text-green-600">${{ $item['subtotal'] }}</span>
-                    <a href="{{ route('pedidos.eliminar', $item['product_id']) }}" class="btn-eliminar text-red-600 hover:text-red-800 text-xl">&times;</a>
+                    <a href="{{ route('pedidos.eliminar', $item['product_id']) }}" class="btn-eliminar w-8 h-8 flex items-center justify-center text-red-600 hover:text-red-800 text-xl active:text-red-900 select-none">&times;</a>
                 </div>
             </li>
             @endforeach
