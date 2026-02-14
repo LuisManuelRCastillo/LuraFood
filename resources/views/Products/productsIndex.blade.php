@@ -55,8 +55,15 @@
                     @endif
             
                     <p class="text-sm text-gray-600 text-center mb-3 h-12 overflow-hidden text-ellipsis">{{ $producto->descripcion }}</p>
-                    <p class="text-lg font-bold text-green-600 text-center mb-3">${{ number_format($producto->precio, 2) }}</p>
-            
+                    <p class="text-lg font-bold text-green-600 text-center mb-3 precio-display"
+                       data-base="{{ $producto->precio }}">
+                        @if($categoria->id == 1 || $categoria->id == 2)
+                            ${{ number_format($producto->precio - 5, 2) }}
+                        @else
+                            ${{ number_format($producto->precio, 2) }}
+                        @endif
+                    </p>
+
                     <!-- Formulario para BEBIDAS -->
                     @if($categoria->id == 1 || $categoria->id == 2)
                     <form action="{{ route('pedidos.agregar', $producto->id) }}" method="POST" class="mt-3">
@@ -67,7 +74,9 @@
                                 @foreach(['Chico','Mediano','Grande'] as $tamano)
                                     <label class="cursor-pointer">
                                         <input type="radio" name="tamano" value="{{ strtolower($tamano) }}"
-                                            class="hidden peer" {{ $loop->first ? 'checked' : '' }}>
+                                            class="hidden peer tamano-radio"
+                                            data-chico="-5" data-mediano="0" data-grande="10"
+                                            {{ $loop->first ? 'checked' : '' }}>
                                         <div class="px-3 py-2 border rounded-lg text-sm text-gray-700 bg-white hover:bg-green-100 peer-checked:bg-green-600 peer-checked:text-white shadow-sm">
                                             {{ $tamano }}
                                         </div>
@@ -124,8 +133,11 @@
         </div>
     </div>
 
+    <!-- Overlay oscuro para móvil -->
+    <div id="carritoOverlay" class="fixed inset-0 bg-black bg-opacity-40 z-30 hidden"></div>
+
     <!-- Drawer Carrito -->
-    <div id="carritoDrawer" class="fixed top-0 right-0 h-full w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-40 overflow-y-auto p-6">
+    <div id="carritoDrawer" class="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-40 overflow-y-auto p-4 sm:p-6">
         <div class="flex justify-between items-center border-b pb-2 mb-4">
             <h2 class="text-2xl font-bold text-green-700">Tu pedido</h2>
             <button id="cerrarCarrito" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
@@ -140,16 +152,23 @@
         const abrir = document.getElementById('abrirCarrito');
         const cerrar = document.getElementById('cerrarCarrito');
         const drawer = document.getElementById('carritoDrawer');
+        const overlay = document.getElementById('carritoOverlay');
 
-        abrir.addEventListener('click', () => {
+        function abrirCarrito() {
             drawer.classList.remove('translate-x-full');
-            abrir.style.display = 'none'; 
-        });
+            overlay.classList.remove('hidden');
+            abrir.style.display = 'none';
+        }
 
-        cerrar.addEventListener('click', () => {
+        function cerrarCarrito() {
             drawer.classList.add('translate-x-full');
-            abrir.style.display = 'block'; 
-        });
+            overlay.classList.add('hidden');
+            abrir.style.display = 'block';
+        }
+
+        abrir.addEventListener('click', abrirCarrito);
+        cerrar.addEventListener('click', cerrarCarrito);
+        overlay.addEventListener('click', cerrarCarrito);
 
         const buscador = document.getElementById('buscador');
         const tarjetas = document.querySelectorAll('.tarjeta-producto');
@@ -164,6 +183,25 @@
                 } else {
                     card.style.display = 'none';
                 }
+            });
+        });
+
+        // Precio dinámico según tamaño
+        const ajustesTamano = { chico: -5, mediano: 0, grande: 10 };
+
+        document.querySelectorAll('.tarjeta-producto').forEach(card => {
+            const radios = card.querySelectorAll('.tamano-radio');
+            const precioDisplay = card.querySelector('.precio-display');
+            if (!radios.length || !precioDisplay) return;
+
+            const precioBase = parseFloat(precioDisplay.dataset.base);
+
+            radios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    const ajuste = ajustesTamano[radio.value] || 0;
+                    const nuevoPrecio = precioBase + ajuste;
+                    precioDisplay.textContent = '$' + nuevoPrecio.toFixed(2);
+                });
             });
         });
 
