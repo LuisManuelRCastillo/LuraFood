@@ -183,6 +183,7 @@ class PedidoController extends Controller
                 'customer_name'  => $nombre,
                 'customer_email' => $email,
                 'status'         => 'pending',
+                'payment_status' => 'pending',
                 'total'          => $total,
                 'mesa'           => $mesa,
             ]);
@@ -230,6 +231,7 @@ public function finalizar(Request $request)
             'customer_name'  => $cliente['nombre'] ?? 'Cliente Anónimo',
             'customer_email' => $cliente['email'] ?? null,
             'status'         => 'pending',
+            'payment_status' => 'pending',
             'total'          => array_sum(array_column($pedidoSesion, 'subtotal')),
             'mesa'			 => $mesa,
         ]);
@@ -291,7 +293,10 @@ public function finalizar(Request $request)
     {
         $pedidosPendientes = Pedido::with('items.producto')
             ->where('status', 'delivered')
-            ->where('payment_status', '!=', 'paid')
+            ->where(function ($q) {
+                $q->where('payment_status', '!=', 'paid')
+                  ->orWhereNull('payment_status');
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -305,7 +310,10 @@ public function finalizar(Request $request)
     {
         $pedidos = Pedido::with('items.producto')
             ->where('status', 'delivered')
-            ->where('payment_status', '!=', 'paid')
+            ->where(function ($q) {
+                $q->where('payment_status', '!=', 'paid')
+                  ->orWhereNull('payment_status');
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 

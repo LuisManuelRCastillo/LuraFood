@@ -62,34 +62,34 @@
                             <!-- Opciones de Pago -->
                             <div>
                                 <p class="font-semibold text-gray-800 text-xs mb-2">Registrar Pago:</p>
-                                <div class="grid grid-cols-3 gap-2">
-                                    <form action="{{ route('pedidos.marcar-pagado', $pedido->id) }}" method="POST">
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <form action="{{ route('pedidos.marcar-pagado', $pedido->id) }}" method="POST" class="flex-1">
                                         @csrf
                                         <input type="hidden" name="payment_method" value="cash">
                                         <button type="submit"
-                                                class="w-full px-2 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold rounded-lg transition flex flex-col items-center gap-1 text-sm">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                                class="w-full px-3 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                             <span>Efectivo</span>
                                         </button>
                                     </form>
 
-                                    <form action="{{ route('pedidos.marcar-pagado', $pedido->id) }}" method="POST">
+                                    <form action="{{ route('pedidos.marcar-pagado', $pedido->id) }}" method="POST" class="flex-1">
                                         @csrf
                                         <input type="hidden" name="payment_method" value="card">
                                         <button type="submit"
-                                                class="w-full px-2 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition flex flex-col items-center gap-1 text-sm">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                                class="w-full px-3 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                                             <span>Tarjeta</span>
                                         </button>
                                     </form>
 
-                                    <form action="{{ route('pedidos.marcar-pagado', $pedido->id) }}" method="POST">
+                                    <form action="{{ route('pedidos.marcar-pagado', $pedido->id) }}" method="POST" class="flex-1">
                                         @csrf
                                         <input type="hidden" name="payment_method" value="transfer">
                                         <button type="submit"
-                                                class="w-full px-2 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold rounded-lg transition flex flex-col items-center gap-1 text-sm">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                                            <span>Transfer.</span>
+                                                class="w-full px-3 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold rounded-lg transition flex items-center justify-center gap-2 text-sm">
+                                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                            <span>Transferencia</span>
                                         </button>
                                     </form>
                                 </div>

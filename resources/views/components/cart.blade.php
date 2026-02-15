@@ -27,11 +27,11 @@
 
                 {{-- Fila 2: Controles de cantidad y precio --}}
                 <div class="flex justify-between items-center mt-2">
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-2">
                         <form action="{{ route('pedido.menos', $key) }}" method="POST" class="form-menos">
                             @csrf
                             <button type="submit"
-                                    class="w-12 h-12 flex items-center justify-center bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full text-2xl font-bold text-gray-600 select-none transition">
+                                    class="w-11 h-11 flex items-center justify-center bg-gray-200 border border-gray-300 hover:bg-gray-300 active:bg-gray-400 rounded-lg text-xl font-bold text-gray-700 select-none transition">
                                 &minus;
                             </button>
                         </form>
@@ -39,7 +39,7 @@
                         <form action="{{ route('pedido.mas', $key) }}" method="POST" class="form-mas">
                             @csrf
                             <button type="submit"
-                                    class="w-12 h-12 flex items-center justify-center bg-green-100 hover:bg-green-200 active:bg-green-300 rounded-full text-2xl font-bold text-green-700 select-none transition">
+                                    class="w-11 h-11 flex items-center justify-center bg-green-600 border border-green-700 hover:bg-green-700 active:bg-green-800 rounded-lg text-xl font-bold text-white select-none transition">
                                 +
                             </button>
                         </form>
