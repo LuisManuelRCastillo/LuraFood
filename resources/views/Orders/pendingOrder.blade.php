@@ -126,8 +126,8 @@
                     <div class="flex flex-wrap items-center gap-2 mb-1">
                         <h2 class="font-bold text-lg text-green-600">Pedido #${p.id}</h2>
                         ${p.para_llevar
-                            ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">🥡 Para llevar</span>`
-                            : `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">🪑 Mesa: ${p.mesa || mesaActual}</span>`
+                            ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full"> Para llevar</span>`
+                            : `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">Mesa: ${p.mesa || mesaActual}</span>`
                         }
                     </div>
                     <p><strong>Cliente:</strong> ${p.customer_name ?? 'N/A'}</p>
@@ -208,8 +208,8 @@
                         <div class="flex flex-wrap items-center gap-2 mb-1">
                             <h2 class="text-base sm:text-lg font-bold text-gray-800">Pedido #${p.id}</h2>
                             ${p.para_llevar
-                                ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">🥡 Para llevar</span>`
-                                : (p.mesa ? `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">🪑 Mesa: ${p.mesa}</span>` : '')
+                                ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full"> Para llevar</span>`
+                                : (p.mesa ? `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full"> Mesa: ${p.mesa}</span>` : '')
                             }
                         </div>
                         <p class="text-sm text-gray-600 truncate">Cliente: <strong>${p.customer_name ?? 'Anónimo'}</strong></p>
