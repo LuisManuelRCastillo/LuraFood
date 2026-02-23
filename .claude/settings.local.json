@@ -11,7 +11,8 @@
       "Bash(php:*)",
       "Bash(curl:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
