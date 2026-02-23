@@ -71,7 +71,12 @@
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                 <input type="email" name="email" placeholder="Email (opcional)"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                <p class="text-xs text-gray-400">Si no los proporcionas, será un pedido anónimo.</p>
+                <label class="flex items-center gap-2 py-1 cursor-pointer">
+                    <input type="checkbox" name="para_llevar" value="1"
+                           class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500">
+                    <span class="text-sm text-gray-700 font-medium">¿Es para llevar?</span>
+                </label>
+                <p class="text-xs text-gray-400">Si no proporcionas nombre, será un pedido anónimo.</p>
                 <button type="submit"
                         class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition text-base active:bg-green-800">
                     Confirmar Pedido

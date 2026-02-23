@@ -30,6 +30,39 @@
         <div id="lista-pedidos" class="space-y-4"></div>
     </div>
 
+    {{-- Modal Efectivo --}}
+    <div id="modalEfectivo" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Pago en Efectivo</h2>
+            <div class="mb-3">
+                <p class="text-sm text-gray-600">Total a cobrar:</p>
+                <p id="modalTotal" class="text-3xl font-extrabold text-green-600">$0.00</p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">¿Con cuánto paga el cliente?</label>
+                <input type="number" id="montoPagado" min="0" step="0.01" placeholder="Ej. 200.00"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            <div id="cambioContainer" class="mb-4 hidden">
+                <p class="text-sm text-gray-600">Cambio a devolver:</p>
+                <p id="montoCambio" class="text-3xl font-extrabold text-blue-600">$0.00</p>
+            </div>
+            <div id="cambioError" class="mb-4 hidden">
+                <p class="text-sm text-red-600 font-semibold">El monto es insuficiente para cubrir el total.</p>
+            </div>
+            <div class="flex gap-3 mt-4">
+                <button onclick="cerrarModalEfectivo()"
+                        class="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg font-bold hover:bg-gray-300 transition">
+                    Cancelar
+                </button>
+                <button id="btnConfirmarEfectivo" onclick="confirmarPagoEfectivo()"
+                        class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition">
+                    Confirmar Pago
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- Sección: Pagos pendientes --}}
     <div id="seccionPagos" class="hidden">
         <div class="flex justify-between items-center mb-6">
@@ -90,9 +123,13 @@
             cont.innerHTML = pedidos.map(p => `
             <div class="space-y-2">
                 <div class="border p-4 rounded-lg shadow bg-white">
-                    <h2 class="font-bold text-lg text-green-600">
-                       Pedido #${p.id} - Mesa: ${p.mesa || mesaActual}
-                    </h2>
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <h2 class="font-bold text-lg text-green-600">Pedido #${p.id}</h2>
+                        ${p.para_llevar
+                            ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full">🥡 Para llevar</span>`
+                            : `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">🪑 Mesa: ${p.mesa || mesaActual}</span>`
+                        }
+                    </div>
                     <p><strong>Cliente:</strong> ${p.customer_name ?? 'N/A'}</p>
                     <p><strong>Total:</strong> $${p.total}</p>
                     <ul class="mt-2 text-sm list-disc list-inside">
@@ -168,9 +205,14 @@
             <div class="bg-white border-l-4 border-red-500 shadow rounded-lg p-4 sm:p-5">
                 <div class="flex justify-between items-start mb-3">
                     <div class="min-w-0 flex-1 pr-3">
-                        <h2 class="text-base sm:text-lg font-bold text-gray-800">Pedido #${p.id}</h2>
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <h2 class="text-base sm:text-lg font-bold text-gray-800">Pedido #${p.id}</h2>
+                            ${p.para_llevar
+                                ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full">🥡 Para llevar</span>`
+                                : (p.mesa ? `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">🪑 Mesa: ${p.mesa}</span>` : '')
+                            }
+                        </div>
                         <p class="text-sm text-gray-600 truncate">Cliente: <strong>${p.customer_name ?? 'Anónimo'}</strong></p>
-                        ${p.mesa ? `<p class="text-sm text-gray-600">Mesa: ${p.mesa}</p>` : ''}
                     </div>
                     <div class="text-right flex-shrink-0">
                         <p class="text-xl sm:text-2xl font-bold text-red-600">$${parseFloat(p.total).toFixed(2)}</p>
@@ -191,21 +233,21 @@
                 </div>
 
                 <p class="font-semibold text-gray-700 text-xs mb-2">Registrar pago:</p>
-                <div class="flex flex-col sm:flex-row gap-2">
-                    <button onclick="marcarPagado(${p.id}, 'cash')"
-                            class="flex-1 px-3 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 text-sm font-bold transition flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="mostrarModalEfectivo(${p.id}, ${parseFloat(p.total).toFixed(2)})"
+                            class="px-2 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 text-sm font-bold transition flex items-center justify-center gap-1">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         <span>Efectivo</span>
                     </button>
                     <button onclick="marcarPagado(${p.id}, 'card')"
-                            class="flex-1 px-3 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-bold transition flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            class="px-2 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-bold transition flex items-center justify-center gap-1">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                         <span>Tarjeta</span>
                     </button>
                     <button onclick="marcarPagado(${p.id}, 'transfer')"
-                            class="flex-1 px-3 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 text-sm font-bold transition flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                        <span>Transferencia</span>
+                            class="px-2 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 text-sm font-bold transition flex items-center justify-center gap-1">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                        <span>Transf.</span>
                     </button>
                 </div>
             </div>
@@ -235,6 +277,66 @@
             console.error("Error al marcar pagado:", error);
             alert("No se pudo registrar el pago");
         }
+    }
+
+    // ── Modal Efectivo ──
+    let pedidoIdEfectivo = null;
+    let totalEfectivo = 0;
+
+    function mostrarModalEfectivo(pedidoId, total) {
+        pedidoIdEfectivo = pedidoId;
+        totalEfectivo = parseFloat(total);
+        document.getElementById('modalTotal').textContent = '$' + totalEfectivo.toFixed(2);
+        document.getElementById('montoPagado').value = '';
+        document.getElementById('cambioContainer').classList.add('hidden');
+        document.getElementById('cambioError').classList.add('hidden');
+        document.getElementById('modalEfectivo').classList.remove('hidden');
+        setTimeout(() => document.getElementById('montoPagado').focus(), 100);
+    }
+
+    function cerrarModalEfectivo() {
+        document.getElementById('modalEfectivo').classList.add('hidden');
+        pedidoIdEfectivo = null;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('montoPagado').addEventListener('input', function() {
+            const pagado = parseFloat(this.value) || 0;
+            const cambioContainer = document.getElementById('cambioContainer');
+            const cambioError = document.getElementById('cambioError');
+            const montoCambio = document.getElementById('montoCambio');
+            const btnConfirmar = document.getElementById('btnConfirmarEfectivo');
+
+            if (this.value === '') {
+                cambioContainer.classList.add('hidden');
+                cambioError.classList.add('hidden');
+                return;
+            }
+
+            if (pagado >= totalEfectivo) {
+                const cambio = pagado - totalEfectivo;
+                montoCambio.textContent = '$' + cambio.toFixed(2);
+                cambioContainer.classList.remove('hidden');
+                cambioError.classList.add('hidden');
+                btnConfirmar.disabled = false;
+                btnConfirmar.classList.remove('opacity-50');
+            } else {
+                cambioContainer.classList.add('hidden');
+                cambioError.classList.remove('hidden');
+                btnConfirmar.disabled = true;
+                btnConfirmar.classList.add('opacity-50');
+            }
+        });
+
+        document.getElementById('modalEfectivo').addEventListener('click', function(e) {
+            if (e.target === this) cerrarModalEfectivo();
+        });
+    });
+
+    async function confirmarPagoEfectivo() {
+        if (!pedidoIdEfectivo) return;
+        await marcarPagado(pedidoIdEfectivo, 'cash');
+        cerrarModalEfectivo();
     }
 
     // Refresca cada 5 segundos ambas secciones

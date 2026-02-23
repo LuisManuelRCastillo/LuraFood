@@ -168,7 +168,7 @@ class PedidoController extends Controller
         $pedidoSesion = session('pedido', []);
         $mesa = session('mesa');
 
-        if (!$pedidoSesion) {
+        if (empty($pedidoSesion)) {
             return redirect('/')->with('error', 'No hay pedido para procesar');
         }
 
@@ -186,6 +186,7 @@ class PedidoController extends Controller
                 'payment_status' => 'pending',
                 'total'          => $total,
                 'mesa'           => $mesa,
+                'para_llevar'    => $request->boolean('para_llevar'),
             ]);
 
             Log::info("Pedido #$pedido->id creado - Cliente: $nombre - Total: $total");
@@ -205,12 +206,23 @@ class PedidoController extends Controller
             // Limpiar sesión
             session()->forget(['pedido', 'cliente', 'mesa']);
 
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'redirect' => '/ordenes-confirmadas',
+                    'pedido_id' => $pedido->id,
+                ]);
+            }
+
             return redirect('/ordenes-confirmadas')
                 ->with('success', "Pedido #$pedido->id confirmado. Sera preparado en poco tiempo.")
                 ->with('pedido_id', $pedido->id);
 
         } catch (\Exception $e) {
             Log::error("Error al confirmar pedido: " . $e->getMessage());
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
         }
     }
@@ -221,7 +233,7 @@ public function finalizar(Request $request)
     $cliente      = session('cliente', []);
     $mesa = session('mesa');
 
-    if (!$pedidoSesion) {
+    if (empty($pedidoSesion)) {
         return redirect('/')->with('error', 'No hay pedido para procesar');
     }
 
@@ -233,7 +245,8 @@ public function finalizar(Request $request)
             'status'         => 'pending',
             'payment_status' => 'pending',
             'total'          => array_sum(array_column($pedidoSesion, 'subtotal')),
-            'mesa'			 => $mesa,
+            'mesa'           => $mesa,
+            'para_llevar'    => $request->boolean('para_llevar'),
         ]);
 
         Log::info('Pedido creado con ID: ' . $pedido->id);

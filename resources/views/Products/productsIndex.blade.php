@@ -247,10 +247,15 @@
                     fetch(formConfirmar.action, {
                         method: "POST",
                         body: new FormData(formConfirmar),
-                        headers: { "X-Requested-With": "XMLHttpRequest" },
-                        redirect: "follow"
-                    }).then(res => {
-                        window.location.href = "/ordenes-confirmadas";
+                        headers: { "X-Requested-With": "XMLHttpRequest" }
+                    }).then(res => res.json()).then(data => {
+                        if (data.success) {
+                            window.location.href = data.redirect || "/ordenes-confirmadas";
+                        } else {
+                            btn.disabled = false;
+                            btn.innerText = "Confirmar Pedido";
+                            alert("Error: " + (data.error || "No se pudo confirmar el pedido"));
+                        }
                     }).catch(() => {
                         btn.disabled = false;
                         btn.innerText = "Confirmar Pedido";
