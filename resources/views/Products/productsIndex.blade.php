@@ -48,7 +48,7 @@
                 
                     <h2 class="text-lg font-bold text-gray-800 text-center mb-2">{{ $producto->nombre }}</h2>
                     
-                    @if($categoria->id == 1 || $categoria->id == 2)
+                    @if($categoria->tipo === 'bebida')
                         <span style="text-align:center; color:#4d4d4d">{{ $producto->qty }}ml</span>
                     @else
                         <span>{{ $producto->qty }}g</span>
@@ -57,7 +57,7 @@
                     <p class="text-sm text-gray-600 text-center mb-3 h-12 overflow-hidden text-ellipsis">{{ $producto->descripcion }}</p>
                     <p class="text-lg font-bold text-green-600 text-center mb-3 precio-display"
                        data-base="{{ $producto->precio }}">
-                        @if($categoria->id == 1 || $categoria->id == 2)
+                        @if($categoria->tipo === 'bebida')
                             ${{ number_format($producto->precio - 5, 2) }}
                         @else
                             ${{ number_format($producto->precio, 2) }}
@@ -65,7 +65,7 @@
                     </p>
 
                     <!-- Formulario para BEBIDAS -->
-                    @if($categoria->id == 1 || $categoria->id == 2)
+                    @if($categoria->tipo === 'bebida')
                     <form action="{{ route('pedidos.agregar', $producto->id) }}" method="POST" class="mt-3">
                         @csrf
                         <div class="mb-3">

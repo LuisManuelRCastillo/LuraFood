@@ -76,6 +76,8 @@
                            class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500">
                     <span class="text-sm text-gray-700 font-medium">¿Es para llevar?</span>
                 </label>
+                <textarea name="notas" rows="2" placeholder="Notas o instrucciones especiales (opcional)"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"></textarea>
                 <p class="text-xs text-gray-400">Si no proporcionas nombre, será un pedido anónimo.</p>
                 <button type="submit"
                         class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold transition text-base active:bg-green-800">

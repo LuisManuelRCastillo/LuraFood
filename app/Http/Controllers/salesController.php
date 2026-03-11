@@ -10,10 +10,15 @@ use Illuminate\Http\Request;
 class salesController extends Controller
 {
    
-    public function index()
+    public function index(Request $request)
     {
+        $desde = $request->query('desde', \Carbon\Carbon::now()->startOfMonth()->toDateString());
+        $hasta = $request->query('hasta', \Carbon\Carbon::now()->toDateString());
+
         $pedidos = Sales::with('items.producto')
             ->where('status', 'delivered')
+            ->whereDate('created_at', '>=', $desde)
+            ->whereDate('created_at', '<=', $hasta)
             ->get();
 
         $totalVentas = $pedidos->sum('total');
@@ -55,12 +60,14 @@ class salesController extends Controller
 
         return view('dashboard', compact(
             'pedidos', 'totalVentas', 'ventasPorDia', 'productosMasVendidos', 'productoMasVendido',
-            'metodosPago', 'totalPagado', 'totalSinPagar', 'pedidosSinPagar'
+            'metodosPago', 'totalPagado', 'totalSinPagar', 'pedidosSinPagar', 'desde', 'hasta'
         ));
     }
- public function exportarExcel()
+    public function exportarExcel(Request $request)
     {
-        return Excel::download(new PedidosExport, 'pedidos-' . date('Y-m-d') . '.xlsx');
+        $desde = $request->query('desde', \Carbon\Carbon::now()->startOfMonth()->toDateString());
+        $hasta = $request->query('hasta', \Carbon\Carbon::now()->toDateString());
+        return Excel::download(new PedidosExport($desde, $hasta), 'pedidos-' . $desde . '_' . $hasta . '.xlsx');
     }
 
 }

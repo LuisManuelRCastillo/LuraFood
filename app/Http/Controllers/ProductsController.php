@@ -13,7 +13,7 @@ class ProductsController extends Controller
     public function index($id)
     {
       $categoria = Category::findOrFail($id);
-       $productos = Products::where('id_cat', $id)->get();
+       $productos = Products::where('id_cat', $id)->where('activo', true)->get();
        return view('Products.productsIndex', compact('productos', 'categoria'));
     }
 }

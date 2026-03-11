@@ -12,10 +12,17 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PedidosExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
+    public function __construct(
+        private string $desde,
+        private string $hasta,
+    ) {}
+
     public function collection()
     {
         return Pedido::with('items.producto')
             ->where('status', 'delivered')
+            ->whereDate('created_at', '>=', $this->desde)
+            ->whereDate('created_at', '<=', $this->hasta)
             ->get();
     }
 

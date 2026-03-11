@@ -21,11 +21,10 @@ class PedidoController extends Controller
     
     public function agregar(Request $request, $productId)
     {
-        $producto = Product::findOrFail($productId);
-        $tamano   = $request->input('tamano', 'mediano'); 
-        if($producto->id_cat == 3){
-            $tamano = $request->input('tamano', null);
-        }
+        $producto  = Product::findOrFail($productId);
+        $categoria = \App\Models\CategoryModel::find($producto->id_cat);
+        $esBebida  = $categoria && $categoria->tipo === 'bebida';
+        $tamano    = $esBebida ? $request->input('tamano', 'mediano') : $request->input('tamano', null);
         $leche    = $request->input('leche', null);
         $extras   = (array) $request->input('extras', []);
         sort($extras);
@@ -187,6 +186,7 @@ class PedidoController extends Controller
                 'total'          => $total,
                 'mesa'           => $mesa,
                 'para_llevar'    => $request->boolean('para_llevar'),
+                'notas'          => $request->input('notas') ?: null,
             ]);
 
             Log::info("Pedido #$pedido->id creado - Cliente: $nombre - Total: $total");
@@ -247,6 +247,7 @@ public function finalizar(Request $request)
             'total'          => array_sum(array_column($pedidoSesion, 'subtotal')),
             'mesa'           => $mesa,
             'para_llevar'    => $request->boolean('para_llevar'),
+            'notas'          => $request->input('notas') ?: null,
         ]);
 
         Log::info('Pedido creado con ID: ' . $pedido->id);
@@ -331,6 +332,30 @@ public function finalizar(Request $request)
             ->get();
 
         return response()->json($pedidos);
+    }
+
+    // API: historial de pedidos pagados con filtro de fechas
+    public function apiHistorial(Request $request)
+    {
+        $desde = $request->query('desde', now()->toDateString());
+        $hasta = $request->query('hasta', now()->toDateString());
+
+        $pedidos = Pedido::with('items.producto')
+            ->where('payment_status', 'paid')
+            ->whereDate('created_at', '>=', $desde)
+            ->whereDate('created_at', '<=', $hasta)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $resumen = [
+            'total'      => $pedidos->sum('total'),
+            'efectivo'   => $pedidos->where('payment_method', 'cash')->sum('total'),
+            'tarjeta'    => $pedidos->where('payment_method', 'card')->sum('total'),
+            'transferencia' => $pedidos->where('payment_method', 'transfer')->sum('total'),
+            'cantidad'   => $pedidos->count(),
+        ];
+
+        return response()->json(['pedidos' => $pedidos, 'resumen' => $resumen]);
     }
 
     // Marcar un pedido como pagado
