@@ -57,6 +57,8 @@ Route::post('/staff/logout', [StaffAuthController::class, 'logout'])->name('staf
 // Rutas de staff protegidas con PIN
 Route::middleware('staff.pin')->group(function () {
     Route::get('/ordenes-pendientes', [PedidoController::class, 'pendientes'])->name('pedidos.pendientes');
+    Route::post('/pedidos/deliver-grupo', [PedidoController::class, 'deliverGrupo']);
+    Route::post('/pedidos/cobrar-grupo', [PedidoController::class, 'cobrarGrupo']);
     Route::post('/pedidos/{id}/deliver', [PedidoController::class, 'deliver']);
     Route::post('/pedidos/{id}/marcar-pagado', [PedidoController::class, 'marcarPagado'])->name('pedidos.marcar-pagado');
     Route::get('/api/ordenes-pendientes', [PedidoController::class, 'apiPendientes'])->name('api.ordenes.pendientes');

@@ -302,6 +302,31 @@ public function finalizar(Request $request)
     return response()->json(['success' => true, 'message' => 'Pedido marcado como entregado']);
 }
 
+    // Marcar grupo de pedidos como entregados
+    public function deliverGrupo(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) return response()->json(['success' => false, 'message' => 'Sin IDs'], 422);
+
+        Pedido::whereIn('id', $ids)->where('status', 'pending')->update(['status' => 'delivered']);
+
+        return response()->json(['success' => true]);
+    }
+
+    // Cobrar grupo de pedidos (misma mesa)
+    public function cobrarGrupo(Request $request)
+    {
+        $ids    = $request->input('ids', []);
+        $metodo = $request->input('payment_method', 'cash');
+        if (empty($ids)) return response()->json(['success' => false, 'message' => 'Sin IDs'], 422);
+
+        Pedido::whereIn('id', $ids)
+            ->where('status', 'delivered')
+            ->update(['payment_status' => 'paid', 'payment_method' => $metodo]);
+
+        return response()->json(['success' => true]);
+    }
+
     // Panel de pagos pendientes - Lista de pedidos entregados sin pagar
     public function pagosPendientes()
     {

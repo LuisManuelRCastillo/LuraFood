@@ -274,6 +274,7 @@
                 const hayNuevos = grupo.some(p => nuevos.some(n => n.id === p.id));
                 const color = esPaLlevar ? 'border-orange-400 text-orange-700 bg-orange-50' : 'border-blue-400 text-blue-700 bg-blue-50';
 
+                const ids = grupo.map(p => p.id);
                 return `
                 <div class="mb-8">
                     <div class="flex items-center justify-between px-3 py-2 rounded-lg mb-3 ${color} border">
@@ -282,7 +283,13 @@
                             <span class="text-xs font-semibold opacity-75">${grupo.length} pedido${grupo.length > 1 ? 's' : ''}</span>
                             ${hayNuevos ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse">Nuevo</span>` : ''}
                         </div>
-                        <span class="text-sm font-bold">Total: $${totalGrupo.toFixed(2)}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold">$${totalGrupo.toFixed(2)}</span>
+                            <button onclick="entregarGrupo(${JSON.stringify(ids)})"
+                                    class="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition">
+                                Entregar todo
+                            </button>
+                        </div>
                     </div>
                     <div class="space-y-4 pl-3 border-l-2 ${esPaLlevar ? 'border-orange-300' : 'border-blue-300'}">
                         ${grupo.map(renderPedido).join('')}
@@ -293,6 +300,29 @@
         } catch (error) {
             console.error("Error cargando pedidos:", error);
         }
+    }
+
+    async function entregarGrupo(ids) {
+        try {
+            const res = await fetch('/pedidos/deliver-grupo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ ids })
+            });
+            if (res.ok) { cargarPedidos(); cargarPagosPendientes(); }
+            else alert('No se pudo entregar el grupo');
+        } catch (e) { alert('Error al entregar el grupo'); }
+    }
+
+    async function cobrarGrupo(ids, total) {
+        pedidoIdEfectivo = ids;
+        totalEfectivo = parseFloat(total);
+        document.getElementById('modalTotal').textContent = '$' + totalEfectivo.toFixed(2);
+        document.getElementById('montoPagado').value = '';
+        document.getElementById('cambioContainer').classList.add('hidden');
+        document.getElementById('cambioError').classList.add('hidden');
+        document.getElementById('modalEfectivo').classList.remove('hidden');
+        setTimeout(() => document.getElementById('montoPagado').focus(), 100);
     }
 
     async function marcarEntregado(pedidoId) {
@@ -339,57 +369,79 @@
                 return;
             }
 
-            cont.innerHTML = pedidos.map(p => `
-            <div class="bg-white border-l-4 border-red-500 shadow rounded-lg p-4 sm:p-5">
-                <div class="flex justify-between items-start mb-3">
-                    <div class="min-w-0 flex-1 pr-3">
-                        <div class="flex flex-wrap items-center gap-2 mb-1">
-                            <h2 class="text-base sm:text-lg font-bold text-gray-800">Pedido #${p.id}</h2>
-                            ${p.para_llevar
-                                ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-0.5 rounded-full"> Para llevar</span>`
-                                : (p.mesa ? `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full"> Mesa: ${p.mesa}</span>` : '')
-                            }
-                        </div>
-                        <p class="text-sm text-gray-600 truncate">Cliente: <strong>${p.customer_name ?? 'Anónimo'}</strong></p>
-                    </div>
-                    <div class="text-right flex-shrink-0">
-                        <p class="text-xl sm:text-2xl font-bold text-red-600">$${parseFloat(p.total).toFixed(2)}</p>
-                        <p class="text-xs text-gray-500">PENDIENTE</p>
-                    </div>
-                </div>
+            // Agrupar pagos por mesa
+            const gruposPago = {};
+            pedidos.forEach(p => {
+                const key = p.para_llevar ? '__para_llevar__' : (p.mesa || 'Sin mesa');
+                if (!gruposPago[key]) gruposPago[key] = [];
+                gruposPago[key].push(p);
+            });
 
-                <div class="bg-gray-50 rounded p-3 mb-4">
-                    <p class="font-semibold text-gray-700 text-sm mb-1">Productos:</p>
-                    <ul class="text-sm text-gray-600 space-y-1">
-                        ${p.items.map(i => `
-                            <li>${i.quantity}x ${i.producto?.nombre ?? 'Producto'}
-                                ${i.tamano ? `- ${i.tamano.charAt(0).toUpperCase() + i.tamano.slice(1)}` : ''}
-                                = <strong>$${parseFloat(i.subtotal).toFixed(2)}</strong>
-                            </li>
-                        `).join("")}
-                    </ul>
-                </div>
+            const keysOrdenadosPago = Object.keys(gruposPago).sort((a, b) => {
+                if (a === '__para_llevar__') return 1;
+                if (b === '__para_llevar__') return -1;
+                return a.localeCompare(b, undefined, { numeric: true });
+            });
 
-                <p class="font-semibold text-gray-700 text-xs mb-2">Registrar pago:</p>
-                <div class="grid grid-cols-3 gap-2">
+            const renderPedidoPago = p => `
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-start mb-2">
+                    <p class="font-bold text-gray-800">Pedido #${p.id} <span class="font-normal text-sm text-gray-500">· ${p.customer_name ?? 'Anónimo'}</span></p>
+                    <p class="font-bold text-red-600">$${parseFloat(p.total).toFixed(2)}</p>
+                </div>
+                <ul class="text-sm text-gray-600 mb-3 space-y-0.5">
+                    ${p.items.map(i => `<li>${i.quantity}x ${i.producto?.nombre ?? 'Producto'}${i.tamano ? ` · ${i.tamano.charAt(0).toUpperCase() + i.tamano.slice(1)}` : ''} = <strong>$${parseFloat(i.subtotal).toFixed(2)}</strong></li>`).join('')}
+                </ul>
+                <p class="text-xs text-gray-500 mb-1">Pago individual:</p>
+                <div class="grid grid-cols-3 gap-1.5">
                     <button onclick="mostrarModalEfectivo(${p.id}, ${parseFloat(p.total).toFixed(2)})"
-                            class="px-2 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 text-sm font-bold transition flex items-center justify-center gap-1">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                        <span>Efectivo</span>
-                    </button>
+                            class="py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition">Efectivo</button>
                     <button onclick="marcarPagado(${p.id}, 'card')"
-                            class="px-2 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 text-sm font-bold transition flex items-center justify-center gap-1">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                        <span>Tarjeta</span>
-                    </button>
+                            class="py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition">Tarjeta</button>
                     <button onclick="marcarPagado(${p.id}, 'transfer')"
-                            class="px-2 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 text-sm font-bold transition flex items-center justify-center gap-1">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                        <span>Transf.</span>
-                    </button>
+                            class="py-2 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 transition">Transf.</button>
                 </div>
-            </div>
-            `).join("");
+            </div>`;
+
+            cont.innerHTML = keysOrdenadosPago.map(key => {
+                const grupo = gruposPago[key];
+                const esPaLlevar = key === '__para_llevar__';
+                const etiqueta = esPaLlevar ? 'Para llevar' : `Mesa ${key}`;
+                const totalGrupo = grupo.reduce((s, p) => s + parseFloat(p.total), 0);
+                const ids = grupo.map(p => p.id);
+                const colorHeader = esPaLlevar
+                    ? 'bg-orange-50 border-orange-400 text-orange-700'
+                    : 'bg-red-50 border-red-400 text-red-700';
+
+                return `
+                <div class="mb-6">
+                    <div class="flex items-center justify-between px-3 py-2.5 rounded-lg mb-3 border ${colorHeader}">
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold">${etiqueta}</span>
+                            <span class="text-xs opacity-75">${grupo.length} pedido${grupo.length > 1 ? 's' : ''}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold">$${totalGrupo.toFixed(2)}</span>
+                            ${grupo.length > 1 ? `
+                            <button onclick="cobrarGrupo(${JSON.stringify(ids)}, ${totalGrupo.toFixed(2)})"
+                                    class="px-2 py-1 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 transition">
+                                Cobrar todo
+                            </button>
+                            <button onclick="fetch('/pedidos/cobrar-grupo',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify({ids:${JSON.stringify(ids)},payment_method:'card'})}).then(()=>cargarPagosPendientes())"
+                                    class="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition">
+                                Tarjeta
+                            </button>
+                            <button onclick="fetch('/pedidos/cobrar-grupo',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify({ids:${JSON.stringify(ids)},payment_method:'transfer'})}).then(()=>cargarPagosPendientes())"
+                                    class="px-2 py-1 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 transition">
+                                Transf.
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    <div class="space-y-3 pl-3 border-l-2 ${esPaLlevar ? 'border-orange-300' : 'border-red-300'}">
+                        ${grupo.map(renderPedidoPago).join('')}
+                    </div>
+                </div>`;
+            }).join('');
 
         } catch (error) {
             console.error("Error cargando pagos:", error);
@@ -473,7 +525,16 @@
 
     async function confirmarPagoEfectivo() {
         if (!pedidoIdEfectivo) return;
-        await marcarPagado(pedidoIdEfectivo, 'cash');
+        if (Array.isArray(pedidoIdEfectivo)) {
+            await fetch('/pedidos/cobrar-grupo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                body: JSON.stringify({ ids: pedidoIdEfectivo, payment_method: 'cash' })
+            });
+            cargarPagosPendientes();
+        } else {
+            await marcarPagado(pedidoIdEfectivo, 'cash');
+        }
         cerrarModalEfectivo();
     }
 
