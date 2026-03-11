@@ -222,38 +222,74 @@
                 return;
             }
 
-            cont.innerHTML = pedidos.map(p => `
-            <div class="space-y-2">
-                <div class="border p-4 rounded-lg shadow bg-white ${nuevos.includes(p) ? 'ring-2 ring-green-400 animate-pulse' : ''}">
-                    <div class="flex flex-wrap items-center gap-2 mb-1">
-                        <h2 class="font-bold text-lg text-green-600">Pedido #${p.id}</h2>
-                        ${p.para_llevar
-                            ? `<span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded-full"> Para llevar</span>`
-                            : `<span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">Mesa: ${p.mesa || mesaActual}</span>`
-                        }
+            // Agrupar por mesa (para llevar va en su propio grupo)
+            const grupos = {};
+            pedidos.forEach(p => {
+                const key = p.para_llevar ? '__para_llevar__' : (p.mesa || mesaActual || 'Sin mesa');
+                if (!grupos[key]) grupos[key] = [];
+                grupos[key].push(p);
+            });
+
+            // Ordenar: primero mesas, al final "Para llevar"
+            const keysOrdenados = Object.keys(grupos).sort((a, b) => {
+                if (a === '__para_llevar__') return 1;
+                if (b === '__para_llevar__') return -1;
+                return a.localeCompare(b, undefined, { numeric: true });
+            });
+
+            const renderPedido = p => {
+                const esNuevo = nuevos.some(n => n.id === p.id);
+                return `
+                <div class="space-y-2">
+                    <div class="border p-4 rounded-lg shadow bg-white ${esNuevo ? 'ring-2 ring-green-400 animate-pulse' : ''}">
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <h2 class="font-bold text-base text-green-600">Pedido #${p.id}</h2>
+                            <span class="text-xs text-gray-500">${p.customer_name ?? 'Anónimo'}</span>
+                        </div>
+                        <p class="text-sm text-gray-700"><strong>Total:</strong> $${parseFloat(p.total).toFixed(2)}</p>
+                        ${p.notas ? `<div class="mt-2 bg-yellow-50 border border-yellow-300 rounded-lg px-3 py-2 text-sm text-yellow-800"><span class="font-bold">⚠️ Notas:</span> ${p.notas}</div>` : ''}
+                        <ul class="mt-2 space-y-1">
+                            ${p.items.map(i => `
+                                <li class="border-l-4 border-green-500 pl-3 py-1.5 bg-gray-50 text-sm">
+                                    <p class="font-semibold text-gray-800">${i.quantity}x ${i.producto?.nombre ?? 'Producto'}</p>
+                                    ${i.tamano ? `<p class="text-gray-500"><strong>Tamaño:</strong> ${i.tamano.charAt(0).toUpperCase() + i.tamano.slice(1)}</p>` : ''}
+                                    ${i.leche ? `<p class="text-gray-500"><strong>Leche:</strong> ${i.leche.charAt(0).toUpperCase() + i.leche.slice(1)}</p>` : ''}
+                                    ${i.extras && i.extras.length > 0 ? `<p class="text-gray-500"><strong>Extras:</strong> ${(typeof i.extras === 'string' ? JSON.parse(i.extras) : i.extras).map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(', ')}</p>` : ''}
+                                </li>
+                            `).join("")}
+                        </ul>
                     </div>
-                    <p><strong>Cliente:</strong> ${p.customer_name ?? 'N/A'}</p>
-                    <p><strong>Total:</strong> $${p.total}</p>
-                    ${p.notas ? `<div class="mt-2 bg-yellow-50 border border-yellow-300 rounded-lg px-3 py-2 text-sm text-yellow-800"><span class="font-bold">⚠️ Notas:</span> ${p.notas}</div>` : ''}
-                    <ul class="mt-2 text-sm list-disc list-inside">
-                        ${p.items.map(i => `
-                            <li class="border-l-4 border-green-500 pl-3 py-2 bg-gray-50">
-                                <p class="font-semibold text-gray-800">
-                                    ${i.quantity}x ${i.producto?.nombre ?? 'Producto'}
-                                </p>
-                                ${i.tamano ? `<p class="text-sm text-gray-600 mt-1"><strong>Tamaño:</strong> ${i.tamano.charAt(0).toUpperCase() + i.tamano.slice(1)}</p>` : ''}
-                                ${i.leche ? `<p class="text-sm text-gray-600"><strong>Leche:</strong> ${i.leche.charAt(0).toUpperCase() + i.leche.slice(1)}</p>` : ''}
-                                ${i.extras && i.extras.length > 0 ? `<p class="text-sm text-gray-600"><strong>Extras:</strong> ${(typeof i.extras === 'string' ? JSON.parse(i.extras) : i.extras).map(e => e.charAt(0).toUpperCase() + e.slice(1)).join(', ')}</p>` : ''}
-                            </li>
-                        `).join("")}
-                    </ul>
-                </div>
-                <button onclick="marcarEntregado(${p.id})"
-                        class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition font-bold text-base">
+                    <button onclick="marcarEntregado(${p.id})"
+                            class="w-full px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition font-bold text-sm">
                         Marcar como entregado
-                </button>
-            </div>
-            `).join("");
+                    </button>
+                </div>`;
+            };
+
+            cont.innerHTML = keysOrdenados.map(key => {
+                const grupo = grupos[key];
+                const esPaLlevar = key === '__para_llevar__';
+                const etiqueta = esPaLlevar ? '🥡 Para llevar' : `🪑 Mesa ${key}`;
+                const totalGrupo = grupo.reduce((s, p) => s + parseFloat(p.total), 0);
+                const hayNuevos = grupo.some(p => nuevos.some(n => n.id === p.id));
+
+                return `
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-3 px-1">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg font-extrabold ${esPaLlevar ? 'text-orange-600' : 'text-blue-700'}">${etiqueta}</h2>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${esPaLlevar ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}">
+                                ${grupo.length} pedido${grupo.length > 1 ? 's' : ''}
+                            </span>
+                            ${hayNuevos ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 animate-pulse">Nuevo</span>` : ''}
+                        </div>
+                        <span class="text-sm font-bold text-gray-600">Total: $${totalGrupo.toFixed(2)}</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-2 border-l-4 ${esPaLlevar ? 'border-orange-400' : 'border-blue-400'}">
+                        ${grupo.map(renderPedido).join('')}
+                    </div>
+                </div>`;
+            }).join('');
 
         } catch (error) {
             console.error("Error cargando pedidos:", error);
